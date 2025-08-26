@@ -4,3 +4,9 @@
 *.log
 .idea/
 .vscode/
+
+!.mvn/wrapper/maven-wrapper.properties
+
+!.mvn/wrapper/maven-wrapper.properties
+
+!.mvn/wrapper/maven-wrapper.jar
