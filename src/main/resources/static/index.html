@@ -1,0 +1,71 @@
+﻿<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <title>Shorty – URL Shortener</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <style>
+    body { font-family: system-ui, Arial, sans-serif; margin: 40px; max-width: 720px; }
+    h1 { margin-bottom: 0.2rem; }
+    .card { border: 1px solid #ddd; border-radius: 12px; padding: 16px; margin-top: 16px; }
+    input[type=text] { width: 100%; padding: 10px; border: 1px solid #ccc; border-radius: 8px; }
+    button { padding: 10px 14px; border: 0; border-radius: 8px; background: #1e90ff; color: #fff; cursor: pointer; }
+    button:disabled { opacity: .6; cursor: not-allowed; }
+    .row { display: grid; grid-template-columns: 1fr auto; gap: 10px; margin-top: 10px; }
+    code { background: #f6f6f6; padding: 2px 6px; border-radius: 6px; }
+    .ok { color: #0a7a3b; } .err { color: #a30000; }
+  </style>
+</head>
+<body>
+  <h1>Shorty</h1>
+  <div>Simple URL shortener (Java + Spring Boot)</div>
+
+  <div class="card">
+    <div><strong>Health:</strong> <span id="health">checking…</span></div>
+    <div class="row">
+      <input id="url" type="text" value="https://example.com" placeholder="Enter a URL to shorten (http/https)">
+      <button id="go">Shorten</button>
+    </div>
+    <div id="result" style="margin-top:12px;"></div>
+  </div>
+
+  <script>
+    const healthEl = document.getElementById('health');
+    const urlEl = document.getElementById('url');
+    const goBtn = document.getElementById('go');
+    const resultEl = document.getElementById('result');
+
+    // Health check
+    fetch('/api/urls/health').then(r=>r.json()).then(j=>{
+      healthEl.textContent = j.status === 'ok' ? 'OK' : JSON.stringify(j);
+      healthEl.className = j.status === 'ok' ? 'ok' : 'err';
+    }).catch(()=>{ healthEl.textContent='unreachable'; healthEl.className='err'; });
+
+    // Shorten
+    goBtn.addEventListener('click', async () => {
+      const raw = urlEl.value.trim();
+      if (!raw) return;
+      goBtn.disabled = true;
+      resultEl.textContent = 'Working…';
+      try {
+        const res = await fetch('/api/urls', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ url: raw })
+        });
+        const data = await res.json();
+        if (!res.ok) throw new Error(data.error || res.statusText);
+        const shortUrl = `${location.origin}/r/${data.code}`;
+        resultEl.innerHTML = `
+          <div>Code: <code>${data.code}</code></div>
+          <div>Short link: <a href="${shortUrl}" target="_blank" rel="noopener">${shortUrl}</a></div>
+        `;
+      } catch (e) {
+        resultEl.innerHTML = `<span class="err">Error: ${e.message}</span>`;
+      } finally {
+        goBtn.disabled = false;
+      }
+    });
+  </script>
+</body>
+</html>
